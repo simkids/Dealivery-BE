@@ -1,0 +1,72 @@
+# Vue
+node_modules/
+.DS_Store
+*.log
+.vscode/
+dist/
+temp/
+types/v3-generated.d.ts
+
+explorations
+TODOs.md
+RELEASE_NOTE*.md
+packages/server-renderer/basic.js
+packages/server-renderer/build.dev.js
+packages/server-renderer/build.prod.js
+packages/server-renderer/server-plugin.js
+packages/server-renderer/client-plugin.js
+packages/template-compiler/build.js
+packages/template-compiler/browser.js
+
+# Spring
+*.java.hsp
+*.sonarj
+*.sw*
+build.sh
+integration-repo
+ivy-cache
+argfile*
+activemq-data/
+classes/
+
+# Log files
+jxl.log
+jmx.log
+derby.log
+
+# Gradle artifacts
+.gradle
+.gradletasknamecache
+/backend/build/
+/spring-*/build/
+/framework-*/build/
+/integration-tests/build/
+/src/asciidoc/build/
+spring-test/test-output/
+
+# Maven artifacts
+pom.xml
+/target/
+
+# Eclipse artifacts, including WTP generated manifests
+bin/
+.classpath
+.project
+.settings/
+.springBeans/
+spring-*/src/main/java/META-INF/MANIFEST.MF
+
+# IDEA artifacts and output dirs
+*.iml
+*.ipr
+*.iws
+.idea/
+out/
+test-output/
+atlassian-ide-plugin.xml
+
+# VS Code (duplicate removed above)
+# .vscode/ (already included above)
+
+# Antora playbook
+cached-antora-playbook.yml
