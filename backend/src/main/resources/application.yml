@@ -127,7 +127,7 @@ server:
     encoding:
       charset: UTF-8
       force: true
-    context-path: ${CONTEXT_PATH}
+#    context-path: ${CONTEXT_PATH}
 
 domain: ${DOMAIN}
 
