@@ -22,6 +22,7 @@ import org.example.backend.domain.orders.model.entity.OrderedProduct;
 import org.example.backend.domain.orders.model.entity.Orders;
 import org.example.backend.domain.orders.repository.OrderedProductRepository;
 import org.example.backend.domain.orders.repository.OrdersRepository;
+import org.example.backend.domain.orders.validator.OrdersValidator;
 import org.example.backend.domain.user.model.entity.User;
 import org.example.backend.global.common.constants.OrderStatus;
 import org.example.backend.global.exception.InvalidCustomException;
@@ -47,51 +48,27 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final ProductBoardRepository productBoardRepository;
 
+    private final OrdersValidator ordersValidator;
+
     @Transactional
     public OrderCreateResponse register(User user, OrderRegisterRequest request) {
 
-        validateOrder(request, user.getIdx());
+        ordersValidator.validateOrder(request, user.getIdx(), LocalDateTime.now());
 
         Orders order = OrderRegisterRequest.toEntity(request.getBoardIdx(), user);
-        ordersRepository.save(order);
+        Orders savedOrder = ordersRepository.save(order);
 
         List<OrderedProduct> orderedProducts = request.getOrderedProducts().stream()
-                .map(product -> OrderedProductDto.Request.toEntity(product, order))
+                .map(product -> OrderedProductDto.Request.toEntity(product, savedOrder))
                 .collect(Collectors.toList());
 
         orderedProductRepository.saveAll(orderedProducts);
 
         return OrderCreateResponse.builder()
-                .orderIdx(order.getIdx())
+                .orderIdx(savedOrder.getIdx())
                 .build();
     }
 
-
-    public void validateOrder(OrderRegisterRequest order, Long userIdx){
-
-        ProductBoard board = productBoardRepository.findById(order.getBoardIdx())
-                .orElseThrow(() -> {
-                    orderQueueService.exitQueue(order.getBoardIdx(), userIdx);
-                    return new InvalidCustomException(ORDER_FAIL_EVENT_NOT_FOUND);
-                });
-
-        if (board.getEndedAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidCustomException(ORDER_FAIL_EXPIRED_EVENT); // 이벤트가 끝났을 때
-        }
-
-        order.getOrderedProducts().forEach((product) -> {
-            Product orderdProduct = productRepository.findByIdWithLock(product.getIdx())
-                    .orElseThrow(() -> {
-                        orderQueueService.exitQueue(order.getBoardIdx(), userIdx);
-                        return new InvalidCustomException(ORDER_FAIL_PRODUCT_NOT_FOUND); // 해당하는 상품을 찾을 수가 없을 때
-                    });
-
-            if (product.getQuantity() > orderdProduct.getStock()) {
-                orderQueueService.exitQueue(order.getBoardIdx(), userIdx);
-                throw new InvalidCustomException(ORDER_CREATE_FAIL_LACK_STOCK); // 재고 수량 없을 때
-            }
-        });
-    }
 
     public void complete(User user, OrderCompleteRequest request) {
 
