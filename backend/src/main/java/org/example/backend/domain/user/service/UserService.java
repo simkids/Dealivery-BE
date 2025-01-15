@@ -20,7 +20,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final DeliveryRepository deliveryRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    // private final BCryptPasswordEncoder passwordEncoder;
 
     //등록된 계정이 있는지 검사
     public void isExist(String email) {
@@ -39,7 +39,7 @@ public class UserService {
 
     @Transactional
     public boolean signup(UserDto.UserSignupRequest request) {
-        User newUser = userRepository.save(request.toEntity(passwordEncoder.encode(request.getPassword())));
+        User newUser = userRepository.save(request.toEntity(request.getPassword()));
         //회원가입시 입력한 주소를 기본배송지로 배송지목록에 추가
         deliveryRepository.save(request.toDeliveryEntity(newUser));
         return true;

@@ -17,7 +17,7 @@ import java.util.Optional;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    // private final BCryptPasswordEncoder passwordEncoder;
 
     public Boolean isExist(String email){
         Optional<Company> optionalCompany = companyRepository.findByEmail(email);
@@ -28,6 +28,6 @@ public class CompanyService {
         return true;
     }
     public void signup(CompanyDto.CompanySignupRequest request) {
-        Company newCompany = companyRepository.save(request.toEntity(passwordEncoder.encode(request.getPassword())));
+        // Company newCompany = companyRepository.save(request.toEntity(passwordEncoder.encode(request.getPassword())));
     }
 }

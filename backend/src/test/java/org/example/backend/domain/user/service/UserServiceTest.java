@@ -33,8 +33,8 @@ class UserServiceTest {
     @Mock
     private DeliveryRepository deliveryRepository;
 
-    @Mock
-    private BCryptPasswordEncoder passwordEncoder;
+    // @Mock
+    // private BCryptPasswordEncoder passwordEncoder;
 
     @DisplayName("[해피 케이스] 이메일을 넘겨받아 이미 존재하는 회원인지 검증한다.")
     @Test
@@ -102,7 +102,7 @@ class UserServiceTest {
                 .build();
 
         User user = request.toEntity("encodedPassword");
-        when(passwordEncoder.encode(any(String.class))).thenReturn("encodedPassword");
+        // when(passwordEncoder.encode(any(String.class))).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(deliveryRepository.save(any())).thenReturn(null);
 
