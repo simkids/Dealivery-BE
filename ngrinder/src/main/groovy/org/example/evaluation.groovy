@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 import org.ngrinder.http.HTTPRequest
 import org.ngrinder.http.HTTPRequestControl
 import org.ngrinder.http.HTTPResponse
-import org.ngrinder.http.cookie.Cookie
+import HTTPClient.Cookie;
 import groovy.json.JsonSlurper
 
 /**
@@ -39,7 +39,7 @@ class TestRunner {
     public static final AtomicInteger number = new AtomicInteger(1); // 스레드 안전한 전역 변수
     private static final ThreadLocal<String> threadLoginBody = new ThreadLocal<>(); // 스레드별 loginBody 저장
     // TODO: 쿠키 파싱을 어떻게 할까요??
-    private static final ThreadLocal<List<Cookie>> threadCookie = new ThreadLocal<>();
+    private static final ThreadLocal<List<Cookie>> threadCookie = ThreadLocal.withInitial(ArrayList::new);
 
 
     @BeforeProcess
@@ -87,6 +87,9 @@ class TestRunner {
                 loginBody.getBytes()
         );
 
+        // 현재 스레드의 쿠키 리스트
+        List<Cookie> threadCookies = threadCookie.get();
+
         if (response.statusCode != 200) {
             grinder.logger.warn("[*** Status NOT 200 ***] Response Code: {}, Response Body: {}", response.statusCode, response.getBodyText());
         } else {
@@ -99,16 +102,23 @@ class TestRunner {
 
                 if (cookies) {
                     grinder.logger.info("Cookies received:");
-                    cookies.each { cookie ->
-                        String cookieString = cookie.toString();
-                        if (cookieString.startsWith("Set-Cookie: ")) {
-                            cookieString = cookieString.replaceFirst("Set-Cookie: ", "");
-                        }
-                        // TODO 쿠키 파싱!!!!!
-                        if (cookieString.startsWith("AToken=")) {
-//                            threadCookie.set(); // cookie타입으로 set하고 싶다
-                            grinder.logger.info("threadCookie: {}", threadCookie.get().toString())
-                        }
+                    String cookieString = cookie.toString();
+                    if (cookieString.startsWith("Set-Cookie: ")) {
+                        cookieString = cookieString.replaceFirst("Set-Cookie: ", "");
+                    }
+                    if (cookieString.startsWith("AToken=")) {
+                        cookieString = cookieString.split(" ")[0].replaceFirst("AToken=", "").replaceFirst(";","");
+                        long oneDayInMillis = 24 * 60 * 60 * 1000; // 하루(24시간) 밀리초
+                        Date oneDayLater = new Date(System.currentTimeMillis() + oneDayInMillis);
+                        Cookie cook = new Cookie("AToken", cookieString, logicServerAddr, "/", oneDayLater, true);
+                        threadCookies.add(cook);
+                        grinder.logger.info("AToken Cookie: {}", cook);
+                    }
+                    if (cookieString.startsWith("type=")) {
+                        cookieString = cookieString.split(" ")[0].replaceFirst("type=", "").replaceFirst(";","");
+                        Cookie cook = new Cookie("type", "user", logicServerAddr, "/", null, true);
+                        threadCookies.add(cook);
+                        grinder.logger.info("type Cookie: {}", cook)
                     }
                 } else {
                     grinder.logger.warn("No Set-Cookie header found in the response.");
