@@ -1,22 +1,26 @@
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 
-import static net.grinder.script.Grinder.grinder
-import static org.junit.Assert.*
-import static org.hamcrest.Matchers.*
-import net.grinder.script.GTest
-import net.grinder.scriptengine.groovy.junit.GrinderRunner
-import net.grinder.scriptengine.groovy.junit.annotation.BeforeProcess
-import net.grinder.scriptengine.groovy.junit.annotation.BeforeThread
+import static net.grinder.script.Grinder.grinder;
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
+import net.grinder.script.GTest;
+import net.grinder.script.Grinder;
+import net.grinder.scriptengine.groovy.junit.GrinderRunner;
+import net.grinder.scriptengine.groovy.junit.annotation.BeforeProcess;
+import net.grinder.scriptengine.groovy.junit.annotation.BeforeThread;
 // import static net.grinder.util.GrinderUtils.* // You can use this if you're using nGrinder after 3.2.3
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import org.ngrinder.http.HTTPRequest
-import org.ngrinder.http.HTTPRequestControl
-import org.ngrinder.http.HTTPResponse
+import org.ngrinder.http.HTTPRequest;
+import org.ngrinder.http.HTTPRequestControl;
+import org.ngrinder.http.HTTPResponse;
 import HTTPClient.Cookie;
-import groovy.json.JsonSlurper
+import org.ngrinder.http.cookie.CookieManager;
+import groovy.json.JsonSlurper;
 
 /**
  * A simple example using the HTTP plugin that shows the retrieval of a single page via HTTP.
@@ -25,22 +29,22 @@ import groovy.json.JsonSlurper
  *
  * @author admin
  */
-@RunWith(GrinderRunner)
+@RunWith(GrinderRunner.class)
 class TestRunner {
 
-    public static GTest test
-    public static HTTPRequest request
-    public static Map<String, String> headers = [:]
-    public static Map<String, Object> params = [:]
-    public static List<Cookie> cookies = []
+    public static GTest test;
+    public static HTTPRequest request;
+    public static Map<String, String> headers = new HashMap<>();
+    public static Map<String, Object> params = new HashMap<>();
+    public static List<Cookie> cookies = new ArrayList<>();
+
     public static final String logicServerAddr = System.getenv('LOGIC_SERVER_ADDR');
     public static final String queueServerAddr = System.getenv('QUEUE_SERVER_ADDR');
     public static final String password = System.getenv('PASSWORD');
+
     public static final AtomicInteger number = new AtomicInteger(1); // 스레드 안전한 전역 변수
     private static final ThreadLocal<String> threadLoginBody = new ThreadLocal<>(); // 스레드별 loginBody 저장
-    // TODO: 쿠키 파싱을 어떻게 할까요??
     private static final ThreadLocal<List<Cookie>> threadCookie = ThreadLocal.withInitial(ArrayList::new);
-
 
     @BeforeProcess
     public static void beforeProcess() {
@@ -59,66 +63,55 @@ class TestRunner {
         // 동기화 없이 AtomicInteger로 전역 number 값 증가 및 이메일 생성
         String email = "test" + number.getAndIncrement() + "@gmail.com;user";
         String loginBody = """
-    {
-        "email": "${email}",
-        "password": "${password}"
-    }
-    """;
+        {
+            "email": "${email}",
+            "password": "${password}"
+        }
+        """;
 
         // 스레드별 loginBody 설정
         threadLoginBody.set(loginBody);
 
         grinder.logger.info("Thread {} assigned email: {} with loginBody: {}", grinder.threadNumber, email, loginBody);
-    }
 
-    @Before
-    public void before() {
-        request.setHeaders(headers);
-        grinder.logger.info("Before: Headers and cookies initialized.");
-    }
-
-    @Test
-    public void login() {
-        // 스레드별 loginBody 가져오기
-        String loginBody = threadLoginBody.get();
-
+        // Perform login before tests
         HTTPResponse response = request.POST(
                 "${logicServerAddr}/login",
                 loginBody.getBytes()
         );
 
-        // 현재 스레드의 쿠키 리스트
-        List<Cookie> threadCookies = threadCookie.get();
-
         if (response.statusCode != 200) {
             grinder.logger.warn("[*** Status NOT 200 ***] Response Code: {}, Response Body: {}", response.statusCode, response.getBodyText());
         } else {
-            def responseBody = response.getBodyText();
+            String responseBody = response.getBodyText();
             grinder.logger.info("Response Body: {}", responseBody);
 
             try {
-                // TODO 헤더에서 쿠키값 추출 (쿠키 파싱 !!! 어떻게 할꺼야!!!!!)
-                List<String> cookies = response.getHeaders("Set-Cookie");
-
-                if (cookies) {
+                // 헤더에서 쿠키값 추출
+                List<String> cookieHeaders = response.getHeaders("Set-Cookie");
+                if (cookieHeaders != null) {
                     grinder.logger.info("Cookies received:");
-                    String cookieString = cookie.toString();
-                    if (cookieString.startsWith("Set-Cookie: ")) {
-                        cookieString = cookieString.replaceFirst("Set-Cookie: ", "");
-                    }
-                    if (cookieString.startsWith("AToken=")) {
-                        cookieString = cookieString.split(" ")[0].replaceFirst("AToken=", "").replaceFirst(";","");
-                        long oneDayInMillis = 24 * 60 * 60 * 1000; // 하루(24시간) 밀리초
-                        Date oneDayLater = new Date(System.currentTimeMillis() + oneDayInMillis);
-                        Cookie cook = new Cookie("AToken", cookieString, logicServerAddr, "/", oneDayLater, true);
-                        threadCookies.add(cook);
-                        grinder.logger.info("AToken Cookie: {}", cook);
-                    }
-                    if (cookieString.startsWith("type=")) {
-                        cookieString = cookieString.split(" ")[0].replaceFirst("type=", "").replaceFirst(";","");
-                        Cookie cook = new Cookie("type", "user", logicServerAddr, "/", null, true);
-                        threadCookies.add(cook);
-                        grinder.logger.info("type Cookie: {}", cook)
+                    List<Cookie> threadCookies = threadCookie.get();
+                    for (String cookieHeader : cookieHeaders) {
+                        String cookieString = cookieHeader;
+                        if (cookieString.startsWith("Set-Cookie: ")) {
+                            cookieString = cookieString.replaceFirst("Set-Cookie: ", "");
+                        }
+                        if (cookieString.startsWith("AToken=")) {
+                            cookieString = cookieString.split(" ")[0].replaceFirst("AToken=", "").replaceFirst(";", "");
+                            long oneDayInMillis = 24 * 60 * 60 * 1000; // 하루(24시간) 밀리초
+                            Date oneDayLater = new Date(System.currentTimeMillis() + oneDayInMillis);
+                            Cookie cook = new Cookie("AToken", cookieString, logicServerAddr, "/", oneDayLater, true);
+                            threadCookies.add(cook);
+                            headers.put("Authorization", "Bearer " + cookieString);
+                            grinder.logger.info("AToken Cookie: {}", cook);
+                        }
+                        if (cookieString.startsWith("type=")) {
+                            cookieString = cookieString.split(" ")[0].replaceFirst("type=", "").replaceFirst(";", "");
+                            Cookie cook = new Cookie("type", "user", logicServerAddr, "/", null, true);
+                            threadCookies.add(cook);
+                            grinder.logger.info("type Cookie: {}", cook);
+                        }
                     }
                 } else {
                     grinder.logger.warn("No Set-Cookie header found in the response.");
@@ -127,6 +120,12 @@ class TestRunner {
                 grinder.logger.error("Error while parsing cookies from response headers.", e);
             }
         }
+    }
+
+    @Before
+    public void before() {
+        request.setHeaders(headers);
+        grinder.logger.info("Before: Headers and cookies initialized.");
     }
 
     @Test
@@ -174,14 +173,20 @@ class TestRunner {
                     break
                 }
 
-                Thread.sleep(3000) // 3초 대기 후 재시도
+                grinder.sleep(3000); // 대기 시간
             }
         }
 
         // Step 3: 대기열 종료 후 주문 요청
-        List<Cookie> cookies = threadCookies.get();
-        request.setHeaders(headers);
-        request.addCookies(cookies);
+        List<Cookie> cookies = threadCookie.get(); // 스레드별 쿠키 가져오기
+        String cookieHeader = cookies.collect { it.getName() + "=" + it.getValue() }.join("; "); // 쿠키를 헤더로 변환
+        headers.put("Cookie", cookieHeader); // 쿠키를 헤더에 추가
+
+
+        // 쿠키 값 로그 출력
+        grinder.logger.info("Cookies being set: {}", cookieHeader);
+        request.setHeaders(headers); // 헤더 설정
+
 
         def registerParams = [
                 "boardIdx": 1,
