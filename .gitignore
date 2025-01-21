@@ -70,3 +70,5 @@ atlassian-ide-plugin.xml
 
 # Antora playbook
 cached-antora-playbook.yml
+
+/build/
