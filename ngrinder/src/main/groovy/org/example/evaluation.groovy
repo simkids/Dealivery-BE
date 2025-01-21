@@ -45,7 +45,7 @@ class TestRunner {
     @BeforeProcess
     public static void beforeProcess() {
         HTTPRequestControl.setConnectionTimeout(300000);
-        test = new GTest(1, "로그인");
+        test = new GTest(1, "큐 입장 및 주문");
         request = new HTTPRequest();
         headers.put("Content-Type", "application/json");
         grinder.logger.info("Before process: HTTPRequest and headers initialized.");
@@ -53,7 +53,7 @@ class TestRunner {
 
     @BeforeThread
     public void beforeThread() {
-        test.record(this, "login");
+        test.record(this, "enterQueue");
         grinder.statistics.delayReports = true;
 
         // 1. AtomicInteger로 전역 number 값 증가 및 이메일 생성
