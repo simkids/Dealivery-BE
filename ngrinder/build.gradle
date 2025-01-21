@@ -10,11 +10,32 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.codehaus.groovy:groovy-all:3.0.5'
     implementation 'org.ngrinder:ngrinder-core:3.5.9'
-    implementation 'org.apache.groovy:groovy:4.0.14'
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'org.ngrinder:ngrinder-groovy:3.5.9'
+
+    // JUnit 4 의존성 명시적으로 추가
+    testImplementation 'junit:junit:4.13.2'
+
+
+    // SLF4J API와 구현체 버전 통일
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'ch.qos.logback:logback-classic:1.2.11'
+
+    // JCL-over-SLF4J 버전 고정
+    implementation 'org.slf4j:jcl-over-slf4j:1.7.36'
+
+    configurations.all {
+        resolutionStrategy {
+            eachDependency { DependencyResolveDetails details ->
+                if (details.requested.group == 'org.slf4j') {
+                    details.useVersion '1.7.36' // SLF4J 1.7.x로 강제
+                }
+            }
+        }
+    }
 }
+
 
 test {
     useJUnitPlatform()
