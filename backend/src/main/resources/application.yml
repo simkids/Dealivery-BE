@@ -131,3 +131,9 @@ server:
 
 domain: ${DOMAIN}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus"
+
