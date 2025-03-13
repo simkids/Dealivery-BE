@@ -113,7 +113,7 @@ public class OrderService {
         Orders order = ordersRepository.findById(idx).orElseThrow(() -> new InvalidCustomException(
                 ORDER_FAIL_NOT_FOUND));
 
-        if (order.getUser().getIdx() != user.getIdx())  { // 해당하는 사용자의 주문이 아닐 때
+        if (!order.getUser().getIdx().equals(user.getIdx())) { // 해당하는 사용자의 주문이 아닐 때
             throw new InvalidCustomException(ORDER_CANCEL_FAIL);
         }
 
@@ -172,7 +172,7 @@ public class OrderService {
         ProductBoard board = productBoardRepository.findById(order.getBoardIdx())
                 .orElseThrow(() -> new InvalidCustomException(ORDER_FAIL_EVENT_NOT_FOUND));
 
-        if (company.getIdx() != board.getCompany().getIdx()) {
+        if (!company.getIdx().equals(board.getCompany().getIdx())) {
             throw new InvalidCustomException(ORDER_FAIL_DETAIL);
         }
 
@@ -201,7 +201,7 @@ public class OrderService {
         Orders order = ordersRepository.findById(orderIdx)
                 .orElseThrow(() -> new InvalidCustomException(ORDER_FAIL_DETAIL));
 
-        if (user.getIdx() != order.getUser().getIdx()) {
+        if (!user.getIdx().equals(order.getUser().getIdx())) {
             throw new InvalidCustomException(ORDER_FAIL_DETAIL);
         }
 
