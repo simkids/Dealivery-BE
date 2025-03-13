@@ -75,7 +75,7 @@ public class OrderService {
         Orders order = ordersRepository.findById(request.getOrderIdx()).orElseThrow(() -> new InvalidCustomException(
                 ORDER_FAIL_NOT_FOUND));
 
-        if (order.getUser().getIdx() != user.getIdx()) {
+        if (!order.getUser().getIdx().equals(user.getIdx())){
             log.info("[Faild] Order complete failed: user idx not same [db idx : {}, user idx : {}]", order.getUser().getIdx(),user.getIdx());
             throw new InvalidCustomException(ORDER_PAYMENT_FAIL);
         }
