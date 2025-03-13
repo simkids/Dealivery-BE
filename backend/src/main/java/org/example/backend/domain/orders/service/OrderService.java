@@ -76,6 +76,7 @@ public class OrderService {
                 ORDER_FAIL_NOT_FOUND));
 
         if (order.getUser().getIdx() != user.getIdx()) {
+            log.info("[Faild] Order complete failed: user idx not same [db idx : {}, user idx : {}]", order.getUser().getIdx(),user.getIdx());
             throw new InvalidCustomException(ORDER_PAYMENT_FAIL);
         }
 
@@ -93,6 +94,7 @@ public class OrderService {
             orderQueueService.exitQueue(order.getBoardIdx(), user.getIdx());
 
         } catch (IamportResponseException | IOException e) { // 해당하는 결제 정보를 찾지 못했을 때
+            log.info("[Faild] Order complete failed: payment info not found");
             order.setStatus(OrderStatus.ORDER_FAIL);
             ordersRepository.save(order);
             orderQueueService.exitQueue(order.getBoardIdx(), user.getIdx());
